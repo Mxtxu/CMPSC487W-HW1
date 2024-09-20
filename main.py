@@ -9,7 +9,11 @@ def scan(*args):
         pass
 
 def login():
-    t = Toplevel(root)
+    username = usernameEntry.get()
+    password = passwordEntry.get()
+    if username == "1" and password == "2":
+        t = Toplevel()
+
 
 root = Tk()
 root.title("SunLab Scanner")
@@ -24,14 +28,29 @@ studentIdEntry = StringVar()
 id_entry = ttk.Entry(mainframe, width=7, textvariable=studentIdEntry)
 id_entry.grid(column=2, row=1, sticky=(W, E))
 
+# Username entry for Admin
+usernameEntry = StringVar()
+username_entry = ttk.Entry(mainframe, width = 10, textvariable=usernameEntry)
+username_entry.grid(column=2, row=2)
+
+# Password entry for Admin
+passwordEntry = StringVar()
+password_entry = ttk.Entry(mainframe, width = 10, textvariable=passwordEntry)
+password_entry.grid(column=2, row=3)
+
 studentId = StringVar()
-ttk.Label(mainframe, textvariable=studentId).grid(column=2, row=2, sticky=(W, E))
+# ttk.Label(mainframe, textvariable=studentId).grid(column=2, row=2, sticky=(W, E))
 
 ttk.Button(mainframe, text="Scan", command=scan).grid(column=3, row=1, sticky=W)
 
 ttk.Button(mainframe, text="Admin Login", command=login).grid(column=3, row=2, sticky=W)
 
 ttk.Label(mainframe, text="Student ID:").grid(column=1, row=1, sticky=W)
+
+ttk.Label(mainframe, text="Username: ").grid(column=1, row=2, sticky=W)
+ttk.Label(mainframe, text="Password: ").grid(column=1, row=3, sticky=W)
+
+
 
 for child in mainframe.winfo_children(): 
     child.grid_configure(padx=5, pady=5)
