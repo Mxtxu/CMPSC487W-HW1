@@ -26,27 +26,95 @@ def scan(*args):
     epoch_timestamp = int(start_of_day.timestamp())
 
     # Format to get just the year, month, and day
-
-
     userType = 'student'
+
+    # Placeholder for isActive field.
+    isActive = True
     data = {
         'studentId': value,
         'timestamp': epoch_timestamp,
-        'type': userType
+        'type': userType,
+        'status': isActive
     }
     scanDB.add(data)
 
 #For now, login is just '2' for the password.
 # TO-DO, implement 'credentials' for admins.
 
-
-
-
-needFilter = False
-
 adminFrame = None
 def login():
-    username = usernameEntry.get()
+    def renderLeft(data):
+        global adminFrame
+        if adminFrame is not None:
+            adminFrame.destroy()
+            adminFrame = None
+
+        if adminFrame is None:
+            adminFrame = ttk.Frame(window, borderwidth=4, relief='sunken')
+            adminFrame.pack(side='left', fill='both', expand=True)
+            canvas = tk.Canvas(adminFrame, width=500, height=800)
+            canvas.pack(side="left", fill="both", expand=True)
+
+            scrollbar = ttk.Scrollbar(adminFrame, orient="vertical", command=canvas.yview)
+            scrollbar.pack(side="right", fill="y")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            canvas.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+            finalFrame = ttk.Frame(canvas)
+            canvas.create_window((0, 0), window=finalFrame, anchor="nw")
+
+            ttk.Label(finalFrame, text="Student ID:").grid(column=0, row=0, sticky=N, padx=50, pady=50)
+            ttk.Label(finalFrame, text="Time: ").grid(column=1, row=0, sticky=N, padx=50, pady=50)
+            ttk.Label(finalFrame, text="Type: ").grid(column=2, row=0, sticky=N, padx=50, pady=50)
+
+
+            for row, record in enumerate(data, start=1):
+                doc = record.to_dict()
+                timestamp = doc.get('timestamp', 'N/A')
+                readable_date = str(datetime.datetime.fromtimestamp(timestamp))
+                ttk.Label(finalFrame, text=doc.get('studentId', 'N/A')).grid(row = row, column = 0, sticky="n", padx=10, pady=5)
+                ttk.Label(finalFrame, text=readable_date).grid(row= row, column=1, sticky="n", padx=10, pady=5)
+                ttk.Label(finalFrame, text=doc.get('type', 'N/A')).grid(row= row, column=2, sticky="n", padx=10, pady=5)
+
+    def filterSingleDate(*args):
+        year = startyearValue.get()
+        month =  startmonthValue.get()
+        day = startdayValue.get()
+
+
+        epoch = datetime.datetime(year, month, day).timestamp()
+        data = scanDB.where(field_path='timestamp', op_string='==', value=epoch)
+        renderLeft(data.stream())
+
+
+    def filterTimeRange():
+        year1 = startyearValue.get()
+        month1 = startmonthValue.get()
+        day1 = startdayValue.get()
+
+        year2 = endyearValue.get()
+        month2 = endmonthValue.get()
+        day2 = enddayValue.get()
+
+        epoch1 = datetime.datetime(year1, month1, day1).timestamp()
+        epoch2 = datetime.datetime(year2, month2, day2).timestamp()
+        data = scanDB.where(field_path='timestamp', op_string='>=', value=epoch1).where(field_path='timestamp', op_string='<=', value=epoch2)
+        renderLeft(data.stream())
+
+    def filterStudentId():
+        studId = newId.get()
+
+        print(studId)
+        data = scanDB.where(field_path='studentId', op_string='==', value=studId)
+
+        renderLeft(data.stream())
+
+    def resetFrame():
+        defaultRecords = scanDB.stream()
+        renderLeft(defaultRecords)
+
+    records = scanDB.stream()
+
     password = passwordEntry.get()
     if password == "2":
         window = Toplevel()
