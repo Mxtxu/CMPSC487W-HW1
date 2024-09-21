@@ -10,40 +10,39 @@ from firebase_admin import credentials, firestore
 cred = credentials.Certificate("./firestoreinfo/dbKey.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+# Global variables we'll use later
+# ScanDB is the scanHistory collection
 scanDB = db.collection('scanHistory')
 
+# adminFrame is used to track and make sure we don't create duplicate
+# adminFrames in the admin window.
+adminFrame = None
 
+# This is where the user can 'scan' their id. It takes an integer input.
+# And then stores the id, time, and type of user into the database.
 def scan(*args):
-
     value = int(studentIdEntry.get())
-
     today = datetime.date.today()
-
-
     start_of_day = datetime.datetime.combine(today, datetime.time.min)
-
-
     epoch_timestamp = int(start_of_day.timestamp())
-
-    # Format to get just the year, month, and day
     userType = 'student'
 
-    # Placeholder for isActive field.
-    isActive = True
     data = {
         'studentId': value,
         'timestamp': epoch_timestamp,
         'type': userType,
-        'status': isActive
     }
     scanDB.add(data)
 
 #For now, login is just '2' for the password.
 # TO-DO, implement 'credentials' for admins.
 
-adminFrame = None
+# Kind of unwieldy in retrospect but logging in actually renders the whole admin screen.
 def login():
-    def renderLeft(data):
+    # This function will actually render the table. We make sure to destroy
+    # the frame if there is an existing frame.
+    def renderTable(data):
         global adminFrame
         if adminFrame is not None:
             adminFrame.destroy()
@@ -76,42 +75,47 @@ def login():
                 ttk.Label(finalFrame, text=readable_date).grid(row= row, column=1, sticky="n", padx=10, pady=5)
                 ttk.Label(finalFrame, text=doc.get('type', 'N/A')).grid(row= row, column=2, sticky="n", padx=10, pady=5)
 
+    # Used when we want to filter by a single date.
+    # Queries the DB and returns the data from that specific date.
     def filterSingleDate(*args):
-        year = startyearValue.get()
-        month =  startmonthValue.get()
-        day = startdayValue.get()
+        year = startYearValue.get()
+        month =  startMonthValue.get()
+        day = startDayValue.get()
 
 
         epoch = datetime.datetime(year, month, day).timestamp()
         data = scanDB.where(field_path='timestamp', op_string='==', value=epoch)
-        renderLeft(data.stream())
+        renderTable(data.stream())
 
-
+    # Same as filterSingleData but does this for a time range instead.
     def filterTimeRange():
-        year1 = startyearValue.get()
-        month1 = startmonthValue.get()
-        day1 = startdayValue.get()
+        year1 = startYearValue.get()
+        month1 = startMonthValue.get()
+        day1 = startDayValue.get()
 
-        year2 = endyearValue.get()
-        month2 = endmonthValue.get()
-        day2 = enddayValue.get()
+        year2 = endYearValue.get()
+        month2 = endMonthValue.get()
+        day2 = endDayValue.get()
 
         epoch1 = datetime.datetime(year1, month1, day1).timestamp()
         epoch2 = datetime.datetime(year2, month2, day2).timestamp()
         data = scanDB.where(field_path='timestamp', op_string='>=', value=epoch1).where(field_path='timestamp', op_string='<=', value=epoch2)
-        renderLeft(data.stream())
+        renderTable(data.stream())
 
+    # Same as the previous functions but filters based on studentId
     def filterStudentId():
         studId = newId.get()
 
         print(studId)
         data = scanDB.where(field_path='studentId', op_string='==', value=studId)
 
-        renderLeft(data.stream())
+        renderTable(data.stream())
 
-    def resetFrame():
+    # Function that's used in the reset button in case we want to reset
+    # the table.
+    def resetTable():
         defaultRecords = scanDB.stream()
-        renderLeft(defaultRecords)
+        renderTable(defaultRecords)
 
     records = scanDB.stream()
 
@@ -121,53 +125,55 @@ def login():
         window.title("Scan History")
 
         # Now we'll make the part of the window that allows for all the filtering.
+        # Creates the labels and input boxes for filtering.
+
         filterFrame = tk.Frame(window, bg="lightgray", width=200)
         filterFrame.pack(side="right", fill="y")
         tk.Label(filterFrame, text="Filtering:", bg="lightgray").grid(column=1, row=0, pady=5)
 
         tk.Label(filterFrame, text="Start Date :", bg="lightgray").grid(column=1, row=1)
         tk.Label(filterFrame, text="Fill this to filter by single date", bg="lightgray").grid(column=1, row=2)
+
         # Year Month Day Columns
         tk.Label(filterFrame, text="Year", bg="lightgray").grid(column=1, row=3)
         tk.Label(filterFrame, text="Month", bg="lightgray").grid(column=2, row=3)
         tk.Label(filterFrame, text="Day", bg="lightgray").grid(column=3, row=3)
 
 
-        startyearValue= IntVar()
-        ttk.Entry(filterFrame, width=10, textvariable=startyearValue).grid(column=1, row=4)
+        startYearValue= IntVar()
+        ttk.Entry(filterFrame, width=10, textvariable=startYearValue).grid(column=1, row=4)
 
-        startmonthValue = IntVar()
-        ttk.Entry(filterFrame, width=10, textvariable=startmonthValue).grid(column=2, row=4)
+        startMonthValue = IntVar()
+        ttk.Entry(filterFrame, width=10, textvariable=startMonthValue).grid(column=2, row=4)
 
-        startdayValue = IntVar()
-        ttk.Entry(filterFrame, width=10, textvariable=startdayValue).grid(column=3, row=4)
+        startDayValue = IntVar()
+        ttk.Entry(filterFrame, width=10, textvariable=startDayValue).grid(column=3, row=4)
 
         tk.Label(filterFrame, text="End Date :", bg="lightgray").grid(column=1, row=5)
 
-        endyearValue = IntVar()
-        ttk.Entry(filterFrame, width=10, textvariable=endyearValue).grid(column=1, row=6)
+        endYearValue = IntVar()
+        ttk.Entry(filterFrame, width=10, textvariable=endYearValue).grid(column=1, row=6)
 
-        endmonthValue = IntVar()
-        ttk.Entry(filterFrame, width=10, textvariable=endmonthValue).grid(column=2, row=6)
+        endMonthValue = IntVar()
+        ttk.Entry(filterFrame, width=10, textvariable=endMonthValue).grid(column=2, row=6)
 
-        enddayValue = IntVar()
-        ttk.Entry(filterFrame, width=10, textvariable=enddayValue).grid(column=3, row=6)
+        endDayValue = IntVar()
+        ttk.Entry(filterFrame, width=10, textvariable=endDayValue).grid(column=3, row=6)
 
-        ttk.Button(filterFrame, text="Filter by Single Date", command=filterSingleDate).grid(column=1, row=7, sticky=W)
-        ttk.Button(filterFrame, text="Filter by Time Range", command=filterTimeRange).grid(column=2, row=7, sticky=W)
+        ttk.Button(filterFrame, text="Filter by Single Date", command=filterSingleDate).grid(column=1, row=7, sticky=W, padx=10, pady=10)
+        ttk.Button(filterFrame, text="Filter by Time Range", command=filterTimeRange).grid(column=2, row=7, sticky=W, padx=10, pady=10)
 
         newId = IntVar()
         tk.Label(filterFrame, text="Filter by Student Id:", bg="lightgray").grid(column=1, row=8, sticky=W)
         ttk.Entry(filterFrame, width=10, textvariable=newId).grid(column=2, row=8, sticky=W)
-        ttk.Button(filterFrame, text="Filter by Student Id", command=filterStudentId).grid(column=3, row=8, sticky=W)
+        ttk.Button(filterFrame, text="Filter by Student Id", command=filterStudentId).grid(column=3, row=8, sticky=W, padx=10, pady=10)
 
-        ttk.Button(filterFrame, text="Reset Filters", command=resetFrame).grid(column=1, row=9, sticky=W)
-        renderLeft(records)
-
+        ttk.Button(filterFrame, text="Reset Filters", command=resetTable).grid(column=1, row=9, sticky=W, padx=10, pady=10)
+        renderTable(records)
 
         window.mainloop()
 
-
+# Makes the main login/scan screen.
 root = Tk()
 root.title("SunLab Scanner")
 
@@ -188,23 +194,15 @@ password_entry.grid(column=2, row=2)
 
 studentId = StringVar()
 
-
 ttk.Button(mainframe, text="Scan", command=scan).grid(column=3, row=1, sticky=W)
-
 ttk.Button(mainframe, text="Admin Login", command=login).grid(column=3, row=2, sticky=W)
 
 ttk.Label(mainframe, text="Student ID:").grid(column=1, row=1, sticky=W)
-
 ttk.Label(mainframe, text="Password: ").grid(column=1, row=2, sticky=W)
 
 
-
-for child in mainframe.winfo_children(): 
-    child.grid_configure(padx=5, pady=5)
-
-# feet_entry.focus()
 root.bind("<Return>", scan)
 
 root.mainloop()
 
-# Testing commit on Mac
+
