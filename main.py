@@ -1,4 +1,5 @@
 import datetime
+import time
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
@@ -23,17 +24,15 @@ adminFrame = None
 # This is where the user can 'scan' their id. It takes an integer input.
 # And then stores the id, time, and type of user into the database.
 def scan(*args):
-    value = int(studentIdEntry.get())
-    today = datetime.date.today()
-    start_of_day = datetime.datetime.combine(today, datetime.time.min)
-    epoch_timestamp = int(start_of_day.timestamp())
+    value = int(idEntry.get())
+    epoch_timestamp = time.time()
     userType = 'student'
 
     # Placeholder value for isActive status.
     isActive = True
 
     data = {
-        'studentId': value,
+        'scanId': value,
         'timestamp': epoch_timestamp,
         'type': userType,
         'isActive': isActive
@@ -67,7 +66,7 @@ def login():
             finalFrame = ttk.Frame(canvas)
             canvas.create_window((0, 0), window=finalFrame, anchor="nw")
 
-            ttk.Label(finalFrame, text="Student ID:").grid(column=0, row=0, sticky=N, padx=50, pady=50)
+            ttk.Label(finalFrame, text="ID:").grid(column=0, row=0, sticky=N, padx=50, pady=50)
             ttk.Label(finalFrame, text="Time: ").grid(column=1, row=0, sticky=N, padx=50, pady=50)
             ttk.Label(finalFrame, text="Type: ").grid(column=2, row=0, sticky=N, padx=50, pady=50)
 
@@ -77,7 +76,7 @@ def login():
                 doc = record.to_dict()
                 timestamp = doc.get('timestamp', 'N/A')
                 readable_date = str(datetime.datetime.fromtimestamp(timestamp))
-                ttk.Label(finalFrame, text=doc.get('studentId', 'N/A')).grid(row = row, column = 0, sticky="n", padx=10, pady=5)
+                ttk.Label(finalFrame, text=doc.get('scanId', 'N/A')).grid(row = row, column = 0, sticky="n", padx=10, pady=5)
                 ttk.Label(finalFrame, text=readable_date).grid(row= row, column=1, sticky="n", padx=10, pady=5)
                 ttk.Label(finalFrame, text=doc.get('type', 'N/A')).grid(row= row, column=2, sticky="n", padx=10, pady=5)
 
@@ -90,9 +89,9 @@ def login():
         month =  startMonthValue.get()
         day = startDayValue.get()
 
-
-        epoch = datetime.datetime(year, month, day).timestamp()
-        data = scanDB.where(field_path='timestamp', op_string='==', value=epoch)
+        epoch1 = datetime.datetime(year, month, day, 0, 0, 0).timestamp()
+        epoch2 = datetime.datetime(year, month, day, 23, 59, 59).timestamp()
+        data = scanDB.where(field_path='timestamp', op_string='>=', value=epoch1).where(field_path='timestamp', op_string='<=', value=epoch2)
         renderTable(data.stream())
 
     # Same as filterSingleData but does this for a time range instead.
@@ -106,7 +105,7 @@ def login():
         day2 = endDayValue.get()
 
         epoch1 = datetime.datetime(year1, month1, day1).timestamp()
-        epoch2 = datetime.datetime(year2, month2, day2).timestamp()
+        epoch2 = datetime.datetime(year2, month2, day2, 23, 59, 59).timestamp()
         data = scanDB.where(field_path='timestamp', op_string='>=', value=epoch1).where(field_path='timestamp', op_string='<=', value=epoch2)
         renderTable(data.stream())
 
@@ -171,9 +170,9 @@ def login():
         ttk.Button(filterFrame, text="Filter by Time Range", command=filterTimeRange).grid(column=2, row=7, sticky=W, padx=10, pady=10)
 
         newId = IntVar()
-        tk.Label(filterFrame, text="Filter by Student Id:", bg="lightgray").grid(column=1, row=8, sticky=W)
+        tk.Label(filterFrame, text="Filter by ID:", bg="lightgray").grid(column=1, row=8, sticky=W)
         ttk.Entry(filterFrame, width=10, textvariable=newId).grid(column=2, row=8, sticky=W)
-        ttk.Button(filterFrame, text="Filter by Student Id", command=filterStudentId).grid(column=3, row=8, sticky=W, padx=10, pady=10)
+        ttk.Button(filterFrame, text="Filter by ID", command=filterStudentId).grid(column=3, row=8, sticky=W, padx=10, pady=10)
 
         ttk.Button(filterFrame, text="Reset Filters", command=resetTable).grid(column=1, row=9, sticky=W, padx=10, pady=10)
         renderTable(records)
@@ -190,8 +189,8 @@ root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
 
 # Entry box
-studentIdEntry = StringVar()
-id_entry = ttk.Entry(mainframe, width=7, textvariable=studentIdEntry)
+idEntry = StringVar()
+id_entry = ttk.Entry(mainframe, width=7, textvariable=idEntry)
 id_entry.grid(column=2, row=1, sticky=(W, E))
 
 # Password entry for Admin
@@ -206,7 +205,7 @@ ttk.Button(mainframe, text="Scan", command=scan).grid(column=3, row=1, sticky=W)
 ttk.Button(mainframe, text="Admin Login", command=login).grid(column=3, row=2, sticky=W)
 
 # Labels for the input boxes.
-ttk.Label(mainframe, text="Student ID:").grid(column=1, row=1, sticky=W)
+ttk.Label(mainframe, text="ID:").grid(column=1, row=1, sticky=W)
 ttk.Label(mainframe, text="Password: ").grid(column=1, row=2, sticky=W)
 
 root.bind("<Return>", scan)
