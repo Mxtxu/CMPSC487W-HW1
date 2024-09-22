@@ -7,6 +7,7 @@ from tkinter import ttk
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+# Setting up Firebase credentials and db access.
 cred = credentials.Certificate("./firestoreinfo/dbKey.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -28,10 +29,14 @@ def scan(*args):
     epoch_timestamp = int(start_of_day.timestamp())
     userType = 'student'
 
+    # Placeholder value for isActive status.
+    isActive = True
+
     data = {
         'studentId': value,
         'timestamp': epoch_timestamp,
         'type': userType,
+        'isActive': isActive
     }
     scanDB.add(data)
 
@@ -67,6 +72,7 @@ def login():
             ttk.Label(finalFrame, text="Type: ").grid(column=2, row=0, sticky=N, padx=50, pady=50)
 
 
+            # This renders the actual records
             for row, record in enumerate(data, start=1):
                 doc = record.to_dict()
                 timestamp = doc.get('timestamp', 'N/A')
@@ -74,6 +80,8 @@ def login():
                 ttk.Label(finalFrame, text=doc.get('studentId', 'N/A')).grid(row = row, column = 0, sticky="n", padx=10, pady=5)
                 ttk.Label(finalFrame, text=readable_date).grid(row= row, column=1, sticky="n", padx=10, pady=5)
                 ttk.Label(finalFrame, text=doc.get('type', 'N/A')).grid(row= row, column=2, sticky="n", padx=10, pady=5)
+
+
 
     # Used when we want to filter by a single date.
     # Queries the DB and returns the data from that specific date.
@@ -129,7 +137,7 @@ def login():
 
         filterFrame = tk.Frame(window, bg="lightgray", width=200)
         filterFrame.pack(side="right", fill="y")
-        tk.Label(filterFrame, text="Filtering:", bg="lightgray").grid(column=1, row=0, pady=5)
+        tk.Label(filterFrame, text="Filtering:", bg="lightgray", font=("Helvetica", 24, "bold")).grid(column=1, row=0, pady=5)
 
         tk.Label(filterFrame, text="Start Date :", bg="lightgray").grid(column=1, row=1)
         tk.Label(filterFrame, text="Fill this to filter by single date", bg="lightgray").grid(column=1, row=2)
@@ -138,7 +146,6 @@ def login():
         tk.Label(filterFrame, text="Year", bg="lightgray").grid(column=1, row=3)
         tk.Label(filterFrame, text="Month", bg="lightgray").grid(column=2, row=3)
         tk.Label(filterFrame, text="Day", bg="lightgray").grid(column=3, row=3)
-
 
         startYearValue= IntVar()
         ttk.Entry(filterFrame, width=10, textvariable=startYearValue).grid(column=1, row=4)
@@ -194,12 +201,13 @@ password_entry.grid(column=2, row=2)
 
 studentId = StringVar()
 
+# Buttons for scanning an ID and button for the Admin Login
 ttk.Button(mainframe, text="Scan", command=scan).grid(column=3, row=1, sticky=W)
 ttk.Button(mainframe, text="Admin Login", command=login).grid(column=3, row=2, sticky=W)
 
+# Labels for the input boxes.
 ttk.Label(mainframe, text="Student ID:").grid(column=1, row=1, sticky=W)
 ttk.Label(mainframe, text="Password: ").grid(column=1, row=2, sticky=W)
-
 
 root.bind("<Return>", scan)
 
