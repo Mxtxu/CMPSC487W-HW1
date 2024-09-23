@@ -113,8 +113,7 @@ def login():
     def filterStudentId():
         studId = newId.get()
 
-        print(studId)
-        data = scanDB.where(field_path='studentId', op_string='==', value=studId)
+        data = scanDB.where(field_path='scanId', op_string='==', value=studId)
 
         renderTable(data.stream())
 
